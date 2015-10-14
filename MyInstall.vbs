@@ -13,15 +13,15 @@
 
 	Const Author			=	"David Segura"
 	Const AuthorEmail		=	"david@segura.org"
-	Const Company			=	"winpeguy.com"
+	Const Company			=	""
 	Const Script			=	"MyInstall.vbs"
 	Const Description		=	"VBScript Wrapper for BAT/EXE/MSI/MSP/MSU/INF Installations"
 	Const Release			=	"https://winpeguy.wordpress.com/myinstall/"
 	Const Reference			=	"https://winpeguy.wordpress.com/2015/06/24/reference-myinstall-config/"
 
 	Const Title 			=	"MyInstall"
-	Const Version 			=	20150626
-	Const VersionFull 		=	20150626.02
+	Const Version 			=	20150922
+	Const VersionFull 		=	20150922.01
 	Dim TitleVersion		:	TitleVersion = Title & " (" & Version & ")"
 	
 	Const SupportContact	=	"David Segura"	'I don't really offer support
@@ -200,6 +200,7 @@
 	'   Restart Actions
 	Dim cRebootWithMDT			:	cRebootWithMDT				= False
 	Dim cRebootWithOS			:	cRebootWithOS				= False
+	Dim cMDTHideProgress		:	cMDTHideProgress			= False
 	
 	'   Operating System Compatibility
 	Dim cConditionOS			:	cConditionOS				= ""					'(Comma Separated List If Multiple) Valid = Windows XP,Windows Vista,Windows 7,Windows 8,Windows 8.1,Server 2012 
@@ -275,6 +276,9 @@
 		objTextStream.WriteLine ""
 		objTextStream.WriteLine "'====== Reboot Action =================================================="
 		objTextStream.WriteLine "	cRebootWithMDT              = "	& cRebootWithMDT
+		objTextStream.WriteLine ""
+		objTextStream.WriteLine "'====== MDT Progress Action ============================================"
+		objTextStream.WriteLine "	cMDTHideProgress            = "	& cMDTHideProgress
 		objTextStream.WriteLine ""
 		objTextStream.WriteLine "'====== Operating System Compatibility ================================="
 		objTextStream.WriteLine "	cOSWindowsXP                = "	& cOSWindowsXP
@@ -404,6 +408,7 @@
 	TraceLog "<Variable> cWaitForProcess = " 		& cWaitForProcess, 1
 	TraceLog "<Variable> cRebootWithMDT = " 		& cRebootWithMDT, 1
 	TraceLog "<Variable> cRebootWithOS = " 			& cRebootWithOS, 1
+	TraceLog "<Variable> cMDTHideProgress = " 		& cMDTHideProgress, 1
 	TraceLog "<Variable> cOSWindowsXP = " 			& cOSWindowsXP, 1
 	TraceLog "<Variable> cOSWindowsVista = " 		& cOSWindowsVista, 1
 	TraceLog "<Variable> cOSWindows7 = " 			& cOSWindows7, 1
@@ -499,8 +504,8 @@
 	Sub subBuildCommandLine
 		Dim sCmdLineMSI		:	sCmdLineMSI		= "msiexec.exe /qb-! /l*vx """ & MyLogInstall & """" & " REBOOT=ReallySuppress UILevel=67 ALLUSERS=2 /i """ & MyScriptParentFolder & "\" & sMySetupFile & """"
 		Dim sCmdLineMSP		:	sCmdLineMSP		= "msiexec.exe /q /l*v """ & MyLogInstall & """" & " /p """ & MyScriptParentFolder & "\" & sMySetupFile & """"
-		Dim sCmdLineMSU		:	sCmdLineMSU		= """" & MyScriptParentFolder & "\" & sMySetupFile & """" & " /quiet"
-		Dim sCmdLineINF		:	sCmdLineINF		= "RunDll32 advpack.dll,LaunchINFSection """ & MyScriptParentFolder & "\" & sMySetupFile & ",DefaultInstall"
+		Dim sCmdLineMSU		:	sCmdLineMSU		= """" & MyScriptParentFolder & "\" & sMySetupFile & """" & " /quiet /norestart"
+		Dim sCmdLineINF		:	sCmdLineINF		= "RunDll32 advpack.dll,LaunchINFSection """ & MyScriptParentFolder & "\" & sMySetupFile & """,DefaultInstall"
 		Dim sCmdLineEXE		:	sCmdLineEXE		= """" & MyScriptParentFolder & "\" & sMySetupFile & """"
 		Dim sCmdLineCMD		:	sCmdLineCMD		= "cmd /c " & """" & MyScriptParentFolder & "\" & sMySetupFile & """"
 		Dim sCmdLineVBS		:	sCmdLineVBS		= "cscript " & """" & MyScriptParentFolder & "\" & sMySetupFile & """"
@@ -707,6 +712,14 @@ TraceLog "======================================================================
 '==============================================================================================
 '==============================================================================================
 TraceLog "================================================================================= Starting Installation", 1
+On Error Resume Next
+	If cMDTHideProgress = True Then
+		Dim oTSProgressUI
+		Set oTSProgressUI = CreateObject("Microsoft.SMS.TSProgressUI") 
+		oTSProgressUI.CloseProgressDialog 
+		Set oTSProgressUI = Nothing
+	End If
+	
 	If LocalPathComplete <> True Then
 		If cSimulation = True Then
 			TraceLog "Test Only Command Line: " & sCmdLine, 2
